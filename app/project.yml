@@ -1,0 +1,40 @@
+# Progetto Xcode generato con XcodeGen: `xcodegen generate` dentro questa cartella.
+name: Orologio
+options:
+  bundleIdPrefix: io.github.soninuzzo
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+targets:
+  Orologio:
+    type: application
+    platform: iOS
+    sources:
+      - path: Orologio
+      # La pagina è la stessa pubblicata su GitHub Pages, non una copia.
+      - path: ../index.html
+        buildPhase: resources
+    info:
+      path: Orologio/Info.plist
+      properties:
+        CFBundleDisplayName: Orologio
+        UILaunchScreen: {}
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: false
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.soninuzzo.orologio
+        TARGETED_DEVICE_FAMILY: "2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        # DEVELOPMENT_TEAM va scelto in Xcode (Signing & Capabilities): resta fuori dal repo.
