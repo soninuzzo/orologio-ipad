@@ -73,6 +73,22 @@ body[data-style="dots"] .s-dots{display:grid;align-items:end;justify-items:end}
 .card-top{display:flex;justify-content:space-between;gap:16px;font-size:13px;color:var(--ink-dim);line-height:1.3}
 .card-top .r{text-align:right;margin-left:auto}
 .wx-stack{display:flex;flex-direction:column;gap:2px}
+
+/* Stile 5: Rullo, i minuti scorrono in verticale */
+body[data-style="reel"] .s-reel{display:flex;align-items:center;justify-content:center;gap:clamp(20px,4vw,56px)}
+.reel-time{display:flex;align-items:center;gap:.08em;font-size:clamp(100px,20vw,260px);line-height:1;text-shadow:0 2px 40px rgba(0,0,0,.12)}
+.reel{display:block;height:3em;margin:-1em 0;overflow:hidden}
+.reel-in{display:flex;flex-direction:column;transform:translateY(-1em);transition:transform .9s cubic-bezier(.3,.7,.2,1)}
+.reel-in>span{display:block;height:1em;opacity:.3;transition:opacity .9s}
+.reel-in>.now{opacity:1}
+/* Stato di partenza dell'animazione: come prima del cambio di minuto */
+.reel-in.pre,.reel-in.pre>span{transition:none}
+.reel-in.pre{transform:translateY(0)}
+.reel-in.pre>.p1{opacity:1}
+.reel-in.pre>.now{opacity:.3}
+.reel-cap{display:flex;flex-direction:column;gap:8px}
+.reel-cap .cap{color:var(--ink);opacity:.8}
+.reel-wx{margin-top:6px}
 .wx-temp{font-size:22px;color:var(--ink);font-weight:700;line-height:1}
 .card .num{font-size:clamp(64px,11vw,120px);margin-top:18px}
 body[data-font="cond"] .card .num{font-weight:500}
@@ -147,6 +163,17 @@ body.nowx [data-wx]{display:none}
       <div class="num" data-hm>09:19</div>
     </div>
   </div>
+  <div class="s-reel">
+    <div class="reel-time num">
+      <span data-hh>09</span>
+      <span class="reel"><span class="reel-in" id="reel"><span data-mm-p2>17</span><span class="p1" data-mm-prev>18</span><span class="now" data-mm>19</span><span data-mm-next>20</span></span></span>
+    </div>
+    <div class="reel-cap">
+      <span class="cap" data-date-wd>mercoledì</span>
+      <span class="cap" data-date-md>ott — 28</span>
+      <span class="cap reel-wx" data-wx><span data-temp>—</span> · <span data-city></span></span>
+    </div>
+  </div>
 </div>
 
 <div class="controls">
@@ -180,7 +207,7 @@ body.nowx [data-wx]{display:none}
 
 <script>
 (()=>{
-const STYLES=[["fluid","Fluido"],["bands","Bande"],["smoke","Fumo"],["dots","Punti"]];
+const STYLES=[["fluid","Fluido"],["bands","Bande"],["smoke","Fumo"],["dots","Punti"],["reel","Rullo"]];
 const MOODS={
   energia:["Energia",["#ff4fa3","#ff6a2b","#5bc8ff","#8a4dff"]],
   tramonto:["Tramonto",["#7a1410","#e8421f","#f39a2c","#c23ad6"]],
@@ -226,7 +253,17 @@ function tick(){
   q("[data-date-short]").forEach(e=>e.textContent=`${wd} ${d.getDate()} ${mo}`);
   q("[data-date-row]").forEach(e=>e.textContent=`${wd} — ${d.getDate()} ${mo}`);
   q("[data-date-long]").forEach(e=>e.innerHTML=`${d.toLocaleDateString("it-IT",{weekday:"long"})}<br>${d.getDate()} ${d.toLocaleDateString("it-IT",{month:"long"})}`);
+  q("[data-date-wd]").forEach(e=>e.textContent=d.toLocaleDateString("it-IT",{weekday:"long"}));
+  q("[data-date-md]").forEach(e=>e.textContent=`${mo} — ${d.getDate()}`);
+  const m=d.getMinutes();
+  q("[data-mm-p2]").forEach(e=>e.textContent=pad((m+58)%60));
+  q("[data-mm-prev]").forEach(e=>e.textContent=pad((m+59)%60));
+  q("[data-mm-next]").forEach(e=>e.textContent=pad((m+1)%60));
+  if(lastMin!==null&&m!==lastMin){reel.classList.add("pre");void reel.offsetWidth;reel.classList.remove("pre")}
+  lastMin=m;
 }
+const reel=document.getElementById("reel");
+let lastMin=null;
 tick(); setInterval(tick,1000);
 
 /* Meteo (Open-Meteo, nessuna chiave): compare solo dopo aver scelto una città */
@@ -324,7 +361,7 @@ lock();
 /* Sfondo WebGL */
 const cv=document.getElementById("bg");
 const gl=cv.getContext("webgl",{antialias:false,premultipliedAlpha:false});
-const MODE={fluid:0,bands:1,smoke:2,dots:3};
+const MODE={fluid:0,bands:1,smoke:2,dots:3,reel:4};
 let U={},cols=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 function hex(h){return [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255)}
 function setColors(){cols=MOODS[prefs.mood][1].map(hex)}
@@ -362,7 +399,7 @@ if(gl){
       col=mix(vec3(.03),vec3(.95),g);
       col=mix(col,col*mix(vec3(1.),c3*1.4,.35),.5);
       col+=(h(gl_FragCoord.xy+t)-.5)*.04;
-    }else{
+    }else if(m<3.5){
       float N=r.x/9.;
       vec2 g=uv*vec2(N,N*r.y/r.x);vec2 c=floor(g);vec2 f=fract(g)-.5;
       float v=fbm(c*.045+vec2(t*.03,t*.012));
@@ -370,6 +407,14 @@ if(gl){
       float d=length(f);
       float a=1.-smoothstep(.12+.24*v-.06,.12+.24*v,d);
       col=mix(vec3(.02),mix(vec3(.9),c3,.25),a*(.25+.75*v));
+    }else{
+      /* archi morbidi attorno a un punto in basso a sinistra, con grana */
+      vec2 o=vec2(-.1,-.35);
+      vec2 q=vec2(fbm(p*.7+t*.02),fbm(p*.7+vec2(4.1,1.7)-t*.015));
+      float d=length(p-o)+q.x*.35;
+      float f=.5+.5*sin(d*4.2-t*.08+q.y*1.5);
+      col=ramp(mix(f,fbm(p*.5+t*.01),.25));
+      col+=(h(gl_FragCoord.xy+fract(t))-.5)*.07;
     }
     gl_FragColor=vec4(col,1.);
   }`;
