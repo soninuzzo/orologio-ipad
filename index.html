@@ -32,7 +32,7 @@
 }
 html,body{height:100%}
 body{background:var(--void);color:var(--ink);font-family:var(--f-ui);overflow:hidden;
-  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 canvas#bg{position:fixed;inset:0;width:100%;height:100%;display:block}
 
@@ -71,18 +71,27 @@ body[data-style="dots"] .s-dots{display:grid;align-items:end;justify-items:end}
 .card{width:min(440px,80vw);border:1px solid var(--glass-edge);border-radius:28px;padding:20px 24px 16px;
   background:rgba(10,10,14,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .card-top{display:flex;justify-content:space-between;gap:16px;font-size:13px;color:var(--ink-dim);line-height:1.3}
-.card-top .r{text-align:right}
+.card-top .r{text-align:right;margin-left:auto}
 .card .num{font-size:clamp(64px,11vw,120px);margin-top:18px}
 body[data-font="cond"] .card .num{font-weight:500}
 
 /* Comandi */
-.gear{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));
-  width:48px;height:48px;border-radius:50%;border:1px solid var(--glass-edge);background:var(--glass);color:var(--ink);
-  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:grid;place-items:center;cursor:pointer;
-  transition:opacity .6s}
-.gear svg{width:22px;height:22px}
-body.idle .gear{opacity:0;pointer-events:none}
-.gear:focus-visible,.chip:focus-visible,.close:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.controls{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));
+  display:flex;gap:10px;transition:opacity .6s}
+.ctl{width:48px;height:48px;border-radius:50%;border:1px solid var(--glass-edge);background:var(--glass);color:var(--ink);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:grid;place-items:center;cursor:pointer}
+.ctl svg{width:22px;height:22px}
+body.idle .controls{opacity:0;pointer-events:none}
+/* Modalità pulita: niente comandi, si esce toccando due volte */
+body.clean .controls{display:none}
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--sheet);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:10px 18px;font-size:14px;
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;transition:opacity .4s;pointer-events:none}
+.toast.show{opacity:1}
+.ctl:focus-visible,.chip:focus-visible,.close:focus-visible,.search:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+/* Senza città impostata il meteo non compare */
+body.nowx [data-wx]{display:none}
 
 .sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);width:min(620px,100%);
   background:var(--sheet);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
@@ -101,6 +110,9 @@ body.idle .gear{opacity:0;pointer-events:none}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--void);border-color:var(--ink)}
 .sw{width:16px;height:16px;border-radius:50%;flex:none}
 .note{font-size:12.5px;color:var(--ink-dim);line-height:1.5;margin:0}
+.search{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:var(--ink);
+  border-radius:14px;padding:12px 14px;font:inherit;font-size:16px;outline:none;-webkit-user-select:text;user-select:text}
+.search::placeholder{color:var(--ink-dim)}
 </style>
 </head>
 <body>
@@ -115,36 +127,53 @@ body.idle .gear{opacity:0;pointer-events:none}
   <div class="s-bands">
     <div>
       <div class="box num" data-hm>09:19</div>
-      <div class="box-sub cap"><span data-date-short></span> · <span data-temp>—</span></div>
+      <div class="box-sub cap"><span data-date-short></span><span data-wx> · </span><span data-wx data-temp>—</span></div>
     </div>
   </div>
   <div class="s-smoke">
     <div class="smoke-time num" data-hm>09:19</div>
     <div class="row">
       <span class="cap" data-date-row>MER — 28 OTT</span>
-      <span class="cap" data-city>Mantova</span>
-      <span class="cap" data-temp>—</span>
+      <span class="cap" data-wx data-city></span>
+      <span class="cap" data-wx data-temp>—</span>
       <span class="cap dim" data-hm>09:19</span>
     </div>
   </div>
   <div class="s-dots">
     <div class="card">
-      <div class="card-top"><span data-temp>—</span><span class="r" data-date-long>mercoledì<br>28 ottobre</span></div>
+      <div class="card-top"><span data-wx data-temp>—</span><span class="r" data-date-long>mercoledì<br>28 ottobre</span></div>
       <div class="num" data-hm>09:19</div>
     </div>
   </div>
 </div>
 
-<button class="gear" id="gear" aria-label="Apri impostazioni" aria-controls="sheet" aria-expanded="false">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4z"/><circle cx="12" cy="12" r="3.2"/></svg>
-</button>
+<div class="controls">
+  <button class="ctl" id="wxbtn" aria-label="Imposta il meteo" aria-controls="wxsheet" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 18.5h10.5a3.75 3.75 0 0 0 .4-7.48A5.75 5.75 0 0 0 6.9 9.6 4.45 4.45 0 0 0 7 18.5z"/></svg>
+  </button>
+  <button class="ctl" id="fsbtn" aria-label="Schermo intero senza comandi">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="ctl" id="gear" aria-label="Apri impostazioni" aria-controls="sheet" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4z"/><circle cx="12" cy="12" r="3.2"/></svg>
+  </button>
+</div>
+<div class="toast" id="toast" role="status">Tocca due volte per mostrare di nuovo i comandi</div>
 
 <section class="sheet" id="sheet" aria-label="Impostazioni">
   <div class="sheet-head"><h2>Personalizza</h2><button class="close" id="close">Fatto</button></div>
   <div class="group"><span class="cap">Stile</span><div class="chips" id="styles"></div></div>
   <div class="group"><span class="cap">Mood</span><div class="chips" id="moods"></div></div>
   <div class="group"><span class="cap">Carattere orario</span><div class="chips" id="fonts"></div></div>
-  <p class="note">Tocca lo schermo per mostrare i comandi; spariscono dopo qualche secondo. L'orologio si sposta di pochi pixel ogni minuto per proteggere lo schermo. Il meteo è fissato su Mantova.</p>
+  <p class="note">Tocca lo schermo per mostrare i comandi; spariscono dopo qualche secondo. Il tasto con i quattro angoli mette l'orologio a schermo intero e nasconde i comandi: tocca due volte per farli tornare. L'orologio si sposta di pochi pixel ogni minuto per proteggere lo schermo.</p>
+</section>
+
+<section class="sheet" id="wxsheet" aria-label="Meteo">
+  <div class="sheet-head"><h2>Meteo</h2><button class="close" id="wxclose">Fatto</button></div>
+  <input class="search" id="wxq" type="search" placeholder="Cerca una città" autocomplete="off" enterkeyhint="search" aria-label="Cerca una città">
+  <div class="chips" id="wxres"></div>
+  <div class="group" id="wxcur"><span class="cap">Città attuale</span><div class="chips"><button class="chip" id="wxoff">Nessuna</button></div></div>
+  <p class="note">La città scelta resta salvata solo su questo dispositivo. I dati meteo arrivano da Open-Meteo, che non richiede account.</p>
 </section>
 
 <script>
@@ -158,9 +187,7 @@ const MOODS={
   notte:["Notte",["#070a24","#2a2f9e","#5a7cff","#3fe0d0"]]
 };
 const FONTS=[["cond","Condensato"],["serif","Elegante"],["mono","Tecnico"]];
-const LAT=45.1564, LON=10.7914, CITY="Mantova";
-
-let prefs={style:"fluid",mood:"energia",font:"cond"};
+let prefs={style:"fluid",mood:"energia",font:"cond",wx:null}; /* wx: {name,lat,lon} scelta dall'utente */
 try{Object.assign(prefs,JSON.parse(localStorage.getItem("orologio-prefs")||"{}"))}catch(e){}
 const save=()=>{try{localStorage.setItem("orologio-prefs",JSON.stringify(prefs))}catch(e){}};
 
@@ -168,7 +195,7 @@ const body=document.body;
 function apply(){
   body.dataset.style=prefs.style; body.dataset.font=prefs.font;
   document.documentElement.style.setProperty("--f-time",{cond:"var(--f-cond)",serif:"var(--f-serif)",mono:"var(--f-mono)"}[prefs.font]);
-  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(prefs[c.dataset.k]===c.dataset.v)));
+  document.querySelectorAll(".chip[data-k]").forEach(c=>c.setAttribute("aria-pressed",String(prefs[c.dataset.k]===c.dataset.v)));
   setColors();
 }
 function chips(id,k,list){
@@ -197,19 +224,45 @@ function tick(){
   q("[data-date-short]").forEach(e=>e.textContent=`${wd} ${d.getDate()} ${mo}`);
   q("[data-date-row]").forEach(e=>e.textContent=`${wd} — ${d.getDate()} ${mo}`);
   q("[data-date-long]").forEach(e=>e.innerHTML=`${d.toLocaleDateString("it-IT",{weekday:"long"})}<br>${d.getDate()} ${d.toLocaleDateString("it-IT",{month:"long"})}`);
-  q("[data-city]").forEach(e=>e.textContent=CITY);
 }
 tick(); setInterval(tick,1000);
 
-/* Meteo (Open-Meteo, nessuna chiave) */
+/* Meteo (Open-Meteo, nessuna chiave): compare solo dopo aver scelto una città */
 async function weather(){
+  const wx=prefs.wx;
+  body.classList.toggle("nowx",!wx);
+  document.getElementById("wxoff").textContent=wx?`${wx.name} · rimuovi`:"Nessuna";
+  if(!wx)return;
+  q("[data-city]").forEach(e=>e.textContent=wx.name);
   try{
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m`);
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${wx.lat}&longitude=${wx.lon}&current=temperature_2m`);
     const j=await r.json(); const t=Math.round(j.current.temperature_2m);
     q("[data-temp]").forEach(e=>e.textContent=`${t}°`);
-  }catch(e){ q("[data-temp]").forEach(e=>e.textContent=`${CITY}`) }
+  }catch(e){ q("[data-temp]").forEach(e=>e.textContent="—") }
 }
 weather(); setInterval(weather,15*60*1000);
+
+const wxq=document.getElementById("wxq"), wxres=document.getElementById("wxres");
+let searchT;
+wxq.addEventListener("input",()=>{clearTimeout(searchT);searchT=setTimeout(findCity,400)});
+wxq.addEventListener("keydown",e=>{if(e.key==="Enter"){clearTimeout(searchT);findCity();wxq.blur()}});
+async function findCity(){
+  const name=wxq.value.trim();
+  wxres.replaceChildren();
+  if(name.length<2)return;
+  try{
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=6&language=it&format=json`);
+    const j=await r.json();
+    if(!j.results){wxres.textContent="Nessuna città trovata";return}
+    j.results.forEach(c=>{
+      const b=document.createElement("button");b.className="chip";
+      b.textContent=[c.name,c.admin1,c.country].filter(Boolean).join(", ");
+      b.onclick=()=>{prefs.wx={name:c.name,lat:c.latitude,lon:c.longitude};save();weather();wxq.value="";wxres.replaceChildren();openSheet(wxsheet,false)};
+      wxres.append(b);
+    });
+  }catch(e){wxres.textContent="Ricerca non riuscita, controlla la connessione"}
+}
+document.getElementById("wxoff").onclick=()=>{prefs.wx=null;save();weather()};
 
 /* Anti burn-in: piccolo spostamento ogni minuto */
 const face=document.getElementById("face");
@@ -217,12 +270,47 @@ setInterval(()=>{face.style.transform=`translate(${(Math.random()*24-12)|0}px,${
 
 /* Comandi che si nascondono */
 const gear=document.getElementById("gear"), sheet=document.getElementById("sheet");
+const wxbtn=document.getElementById("wxbtn"), wxsheet=document.getElementById("wxsheet");
+const controls=document.querySelector(".controls");
+const opener=new Map([[sheet,gear],[wxsheet,wxbtn]]);
+const anyOpen=()=>[...opener.keys()].some(s=>s.classList.contains("open"));
 let idleT;
-function wake(){body.classList.remove("idle");clearTimeout(idleT);idleT=setTimeout(()=>{if(!sheet.classList.contains("open"))body.classList.add("idle")},4000)}
-function openSheet(o){sheet.classList.toggle("open",o);gear.setAttribute("aria-expanded",String(o));wake()}
-gear.onclick=e=>{e.stopPropagation();openSheet(true)};
-document.getElementById("close").onclick=()=>openSheet(false);
-document.addEventListener("pointerdown",e=>{if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&e.target!==gear)openSheet(false);wake();lock()});
+function wake(){body.classList.remove("idle");clearTimeout(idleT);idleT=setTimeout(()=>{if(!anyOpen())body.classList.add("idle")},4000)}
+function openSheet(s,o){
+  opener.forEach((btn,x)=>{const on=o&&x===s;x.classList.toggle("open",on);btn.setAttribute("aria-expanded",String(on))});
+  wake();
+}
+gear.onclick=e=>{e.stopPropagation();openSheet(sheet,true)};
+wxbtn.onclick=e=>{e.stopPropagation();openSheet(wxsheet,true);wxq.focus()};
+document.getElementById("close").onclick=()=>openSheet(sheet,false);
+document.getElementById("wxclose").onclick=()=>openSheet(wxsheet,false);
+
+/* Schermo intero + modalità pulita; doppio tocco per uscire */
+const toast=document.getElementById("toast");
+const root=document.documentElement;
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function setClean(on){
+  body.classList.toggle("clean",on);
+  if(on){
+    openSheet(null,false);
+    try{const req=root.requestFullscreen||root.webkitRequestFullscreen;if(req&&!fsEl()){const p=req.call(root);if(p&&p.catch)p.catch(()=>{})}}catch(e){}
+    toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2500);
+  }else if(fsEl()){
+    try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}
+  }
+}
+document.getElementById("fsbtn").onclick=e=>{e.stopPropagation();setClean(true)};
+/* Se si esce dallo schermo intero con il gesto di sistema, tornano anche i comandi */
+["fullscreenchange","webkitfullscreenchange"].forEach(ev=>document.addEventListener(ev,()=>{if(!fsEl()&&body.classList.contains("clean"))setClean(false)}));
+let lastTap=0;
+document.addEventListener("pointerdown",e=>{
+  if(body.classList.contains("clean")){
+    if(e.timeStamp-lastTap<350){setClean(false);lastTap=0;wake()}else lastTap=e.timeStamp;
+    lock();return;
+  }
+  opener.forEach((btn,s)=>{if(s.classList.contains("open")&&!s.contains(e.target)&&!controls.contains(e.target))openSheet(s,false)});
+  wake();lock();
+});
 wake();
 
 /* Schermo sempre acceso, se il browser lo concede */
